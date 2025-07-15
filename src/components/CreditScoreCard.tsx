@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, Edit3, Save, X } from 'lucide-react';
 import { people } from '../data/mockData';
-import { fetchCreditData } from '../api/fetchCreditData';
+// Use server side utility to pull the latest credit data
+import { fetchCreditData } from '../../utils/fetchCreditData.js';
 import { CreditScore } from '../types';
 
 interface CreditScoreCardProps {
