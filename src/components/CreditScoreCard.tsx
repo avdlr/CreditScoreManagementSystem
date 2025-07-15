@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TrendingUp, Edit3, Save, X } from 'lucide-react';
 import { people } from '../data/mockData';
+import { fetchCreditData } from '../api/fetchCreditData';
+import { CreditScore } from '../types';
 
 interface CreditScoreCardProps {
   selectedPersonId: string;
@@ -9,17 +11,33 @@ interface CreditScoreCardProps {
 
 const CreditScoreCard: React.FC<CreditScoreCardProps> = ({ selectedPersonId, onScoreUpdate }) => {
   const selectedPerson = people.find(p => p.id === selectedPersonId);
-  
+
   if (!selectedPerson) return null;
 
-  const creditScore = {
+  const [creditScore, setCreditScore] = useState<CreditScore>({
     score: selectedPerson.creditScore,
     lastUpdated: selectedPerson.lastUpdated,
     history: selectedPerson.creditHistory
-  };
+  });
 
   const [isEditing, setIsEditing] = useState(false);
   const [newScore, setNewScore] = useState(creditScore.score.toString());
+
+  useEffect(() => {
+    fetchCreditData(selectedPersonId)
+      .then(data => {
+        setCreditScore(data);
+        setNewScore(data.score.toString());
+      })
+      .catch(() => {
+        // Fallback to existing data if fetching fails
+        setCreditScore({
+          score: selectedPerson.creditScore,
+          lastUpdated: selectedPerson.lastUpdated,
+          history: selectedPerson.creditHistory
+        });
+      });
+  }, [selectedPersonId, selectedPerson]);
 
   const getCreditScoreCategory = (score: number) => {
     if (score >= 800) return { category: 'Excellent', color: 'text-green-600', bgColor: 'bg-green-100' };
@@ -33,6 +51,12 @@ const CreditScoreCard: React.FC<CreditScoreCardProps> = ({ selectedPersonId, onS
     const score = parseInt(newScore);
     if (score >= 300 && score <= 850) {
       onScoreUpdate(score);
+      const today = new Date().toISOString().split('T')[0];
+      setCreditScore(prev => ({
+        score,
+        lastUpdated: today,
+        history: [...prev.history, { date: today, score }]
+      }));
       setIsEditing(false);
     }
   };
